@@ -48,11 +48,9 @@ class TodosList
   end
 
   def to_displayable_list
-    list = []
-    @todos.each { |todo|
-      list.push(todo.to_displayable_string)
-    }
-    list.join("\n")
+    @todos.map { |todo|
+      todo.to_displayable_string
+    }.join("\n")
   end
 end
 
