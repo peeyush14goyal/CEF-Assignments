@@ -1,40 +1,37 @@
 require "active_record"
 
 class Todo < ActiveRecord::Base
-  def due_today?
-    due_date == Date.today
-  end
-
-  def due_later?
-    due_date > Date.today
-  end
-
-  def overdue?
-    due_date < Date.today
-  end
-
   def to_displayable_string
     display_status = completed ? "[X]" : "[ ]"
-    display_date = due_today? ? nil : due_date
+    display_date = due_date == Date.today ? nil : due_date
     "#{id}. #{display_status} #{todo_text.strip} #{display_date}"
+  end
+
+  def self.overdue?
+    all.where("due_date < ?", Date.today)
+  end
+
+  def self.due_today?
+    all.where("due_date = ?", Date.today)
+  end
+
+  def self.due_later?
+    all.where("due_date > ?", Date.today)
   end
 
   def self.show_list
     puts "My Todo-list\n\n"
 
     puts "Overdue\n"
-    overdue_todos = all.filter { |todo| todo.overdue? }
-    puts overdue_todos.map { |todo| todo.to_displayable_string }
+    puts Todo.overdue?.map { |todo| todo.to_displayable_string }
     puts "\n\n"
 
     puts "Due Today\n"
-    due_today_todos = all.filter { |todo| todo.due_today? }
-    puts due_today_todos.map { |todo| todo.to_displayable_string }
+    puts Todo.due_today?.map { |todo| todo.to_displayable_string }
     puts "\n\n"
 
     puts "Due Later\n"
-    due_later_todos = all.filter { |todo| todo.due_later? }
-    puts due_later_todos.map { |todo| todo.to_displayable_string }
+    puts Todo.due_later?.map { |todo| todo.to_displayable_string }
     puts "\n\n"
   end
 
