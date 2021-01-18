@@ -49,7 +49,7 @@ class TodosList
 
   def to_displayable_list
     list = []
-    @todos.map { |todo|
+    @todos.each { |todo|
       list.push(todo.to_displayable_string)
     }
     list.join("\n")
