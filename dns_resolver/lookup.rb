@@ -20,59 +20,36 @@ dns_raw = File.readlines("zone")
 
 def parse_dns(dns_raw)
   # Removing comments and empty lines
-  dns_raw = dns_raw.filter { |x| x[0] != "#" }
-  dns_raw = dns_raw.filter { |x| x.length > 1 }
+  dns_raw = dns_raw.filter { |x| x[0] != "#" }.filter { |x| x.length > 1 }
   split_words = []
 
-  dns_raw.map { |rec|
-    tmp = rec.split(", ").map { |x| x.strip }
-    split_words.push(tmp)
+  split_words = dns_raw.map { |rec|
+    rec.split(", ").map { |x| x.strip }
   }
-
-  type_of_rec = split_words.map { |word| word[0] }.uniq
 
   records = {}
 
-  # Creating Records
-  # Like :type => { :name => :value, :name => value }
-  type_of_rec.map { |type|
-    value_pair = {}
-
-    split_words.filter { |word|
-      if word[0] == type
-        value_pair[:"#{word[1]}"] = "#{word[2]}"
-      end
-    }
-
-    records[:"#{type}"] = value_pair
+  split_words.map { |x|
+    records[x[1].to_sym] = { :type => "#{x[0]}", :target => "#{x[2]}" }
   }
   records
 end
 
 def resolve(dns_records, lookup_chain, domain)
-  domain_keys = dns_records.keys
-  typeKey = {}
-  domain_keys.map { |domain_key|
-    typeKey = dns_records[:"#{domain_key}"].select { |key, hash| key.to_s == domain }
-
-    # If domain found then break map
-    if typeKey.empty? == false
-      break typeKey
-    end
-  }
-  # Domain Not found
-  if (typeKey.empty? == true)
-    lookup_chain = ["Error: record not found for #{domain}"]
+  record = dns_records[domain.to_sym]
+  if (!record)
+    lookup_chain.clear()
+    lookup_chain << "Error: Record not found for " + domain
+  elsif record[:type] == "CNAME"
+    lookup_chain.push(record[:target])
+    resolve(dns_records, lookup_chain, record[:target])
+  elsif record[:type] == "A"
+    lookup_chain.push(record[:target])
+    return lookup_chain
+    return
   else
-    if lookup_chain.last != domain
-      lookup_chain.push(domain)
-    end
-    if typeKey[:"#{domain}"][0].count("a-zA-Z") > 0 #Check if its a IP Address or Alias
-      resolve(dns_records, lookup_chain, typeKey[:"#{domain}"])
-    else
-      lookup_chain.push(typeKey[:"#{domain}"])
-      lookup_chain
-    end
+    lookup_chain.clear()
+    lookup_chain << "Invalid record type for " + domain
   end
 end
 
